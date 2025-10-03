@@ -891,6 +891,7 @@ class HhsearchHitFeaturizer(TemplateHitFeaturizer):
       if num_hits >= self._max_hits:
         break
 
+      logging.debug('Processing hit %s', hit.name)
       result = _process_single_hit(
           query_sequence=query_sequence,
           hit=hit,
@@ -958,6 +959,7 @@ class HmmsearchHitFeaturizer(TemplateHitFeaturizer):
       if len(already_seen) >= self._max_hits:
         break
 
+      logging.debug('Processing hit %s', hit.name)
       result = _process_single_hit(
           query_sequence=query_sequence,
           hit=hit,
@@ -977,14 +979,16 @@ class HmmsearchHitFeaturizer(TemplateHitFeaturizer):
         warnings.append(result.warning)
 
       if result.features is None:
-        logging.debug('Skipped invalid hit %s, error: %s, warning: %s',
+        logging.info('Skipped invalid hit %s, error: %s, warning: %s',
                       hit.name, result.error, result.warning)
       else:
         already_seen_key = result.features['template_sequence']
         if already_seen_key in already_seen:
+          logging.info("Skipping hit %s with already seen template sequence '%s'", hit.name, already_seen_key)
           continue
         # Increment the hit counter, since we got features out of this hit.
         already_seen.add(already_seen_key)
+        logging.info("Adding template sequence '%s' from %s, total %d hits", already_seen_key, hit.name, len(already_seen))
         for k in template_features:
           template_features[k].append(result.features[k])
 

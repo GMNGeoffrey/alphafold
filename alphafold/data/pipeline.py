@@ -224,6 +224,11 @@ class DataPipeline:
         query_sequence=input_sequence,
         hits=pdb_template_hits)
 
+    if templates_result.warnings or templates_result.errors:
+      logging.warning('Encountered %d warnings and %d errors getting templates:\nWarnings: %s\nErrors: %s',
+                      len(templates_result.warnings), len(templates_result.errors),
+                      ' ; '.join(templates_result.warnings), ' ; '.join(templates_result.errors))
+
     sequence_features = make_sequence_features(
         sequence=input_sequence,
         description=input_description,
