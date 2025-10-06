@@ -38,9 +38,6 @@ flags.DEFINE_enum('models_to_relax', 'best', ['best', 'all', 'none'],
                   'stage.')
 flags.DEFINE_bool(
     'enable_gpu_relax', True, 'Run relax on GPU if GPU is enabled.')
-flags.DEFINE_string(
-    'gpu_devices', 'all',
-    'Comma separated list of devices to pass to NVIDIA_VISIBLE_DEVICES.')
 flags.DEFINE_list(
     'fasta_paths', None, 'Paths to FASTA files, each containing a prediction '
     'target that will be folded one after another. If a FASTA file contains '
@@ -54,8 +51,6 @@ flags.DEFINE_string(
     'data_dir', None,
     'Path to directory with supporting data: AlphaFold parameters and genetic '
     'and template databases. Set to the target of download_all_databases.sh.')
-flags.DEFINE_string(
-    'docker_image_name', 'alphafold', 'Name of the AlphaFold Docker image.')
 flags.DEFINE_string(
     'max_template_date', None,
     'Maximum template release date to consider (ISO-8601 format: YYYY-MM-DD). '
@@ -86,12 +81,6 @@ flags.DEFINE_boolean(
     'must stay the same between multiple runs that are to reuse the MSAs. '
     'WARNING: This will not check if the sequence, database or configuration '
     'have changed.')
-flags.DEFINE_string(
-    'docker_user', f'{os.geteuid()}:{os.getegid()}',
-    'UID:GID with which to run the Docker container. The output directories '
-    'will be owned by this user:group. By default, this is the current user. '
-    'Valid options are: uid or uid:gid, non-numeric values are not recognised '
-    'by Docker unless that user has been created within the container.')
 
 FLAGS = flags.FLAGS
 
