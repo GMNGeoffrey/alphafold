@@ -4,3 +4,5 @@ docker/Dockerfile
 __pycache__
 *.venv
 .git
+docs/
+imgs/
