@@ -35,13 +35,6 @@ import numpy as np
 
 logging.set_verbosity(logging.INFO)
 
-
-@enum.unique
-class ModelsToRelax(enum.Enum):
-  ALL = 0
-  BEST = 1
-  NONE = 2
-
 flags.DEFINE_list(
     'fasta_names', None, 'Names of FASTA output directories already containing '
     'computed features')
@@ -68,7 +61,7 @@ flags.DEFINE_integer('num_multimer_predictions_per_model', 5, 'How many '
                      'generated per model. E.g. if this is 2 and there are 5 '
                      'models then there will be 10 predictions per input. '
                      'Note: this FLAG only applies if model_preset=multimer')
-flags.DEFINE_enum_class('models_to_relax', ModelsToRelax.BEST, ModelsToRelax,
+flags.DEFINE_enum_class('models_to_relax', predict.ModelsToRelax.BEST, predict.ModelsToRelax,
                         'The models to run the final relaxation step on. '
                         'If `all`, all models are relaxed, which may be time '
                         'consuming. If `best`, only the most confident model '
@@ -99,7 +92,7 @@ def predict_structures(
     amber_relaxer: relax.AmberRelaxation,
     benchmark: bool,
     random_seed: int,
-    models_to_relax: ModelsToRelax,
+    models_to_relax: predict.ModelsToRelax,
     model_type: str,
 ):
   """Predicts structure using AlphaFold for the given sequence."""

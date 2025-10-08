@@ -18,6 +18,7 @@ from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
+from alphafold.model import predict
 import run_alphafold
 import numpy as np
 # Internal import (7716).
@@ -28,8 +29,8 @@ TEST_DATA_DIR = 'alphafold/common/testdata/'
 class RunAlphafoldTest(parameterized.TestCase):
 
   @parameterized.named_parameters(
-      ('relax', run_alphafold.ModelsToRelax.ALL),
-      ('no_relax', run_alphafold.ModelsToRelax.NONE),
+      ('relax', predict.ModelsToRelax.ALL),
+      ('no_relax', predict.ModelsToRelax.NONE),
   )
   def test_end_to_end(self, models_to_relax):
 
@@ -108,7 +109,7 @@ class RunAlphafoldTest(parameterized.TestCase):
         'unrelaxed_model1.cif',
         'unrelaxed_model1.pdb',
     ]
-    if models_to_relax == run_alphafold.ModelsToRelax.ALL:
+    if models_to_relax == predict.ModelsToRelax.ALL:
       expected_files.extend(
           ['relaxed_model1.cif', 'relaxed_model1.pdb', 'relax_metrics.json']
       )

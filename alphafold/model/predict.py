@@ -217,6 +217,8 @@ def predict_structure(
     to_relax = ranked_order
   elif models_to_relax == ModelsToRelax.NONE:
     to_relax = []
+  else:
+    raise ValueError(f'Unrecognized models_to_relax value {models_to_relax}')
 
   for model_name in to_relax:
     t_0 = time.time()

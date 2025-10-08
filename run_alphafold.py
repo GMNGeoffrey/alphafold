@@ -43,13 +43,6 @@ import numpy as np
 
 logging.set_verbosity(logging.INFO)
 
-
-@enum.unique
-class ModelsToRelax(enum.Enum):
-  ALL = 0
-  BEST = 1
-  NONE = 2
-
 flags.DEFINE_list(
     'fasta_paths', None, 'Paths to FASTA files, each containing a prediction '
     'target that will be folded one after another. If a FASTA file contains '
@@ -128,7 +121,7 @@ flags.DEFINE_boolean('use_precomputed_msas', False, 'Whether to read MSAs that '
                      'check if the sequence, database or configuration have '
                      'changed.')
 flags.DEFINE_boolean('use_precomputed_features', False, 'Whether to use existing features.pkl')
-flags.DEFINE_enum_class('models_to_relax', ModelsToRelax.BEST, ModelsToRelax,
+flags.DEFINE_enum_class('models_to_relax', predict.ModelsToRelax.BEST, predict.ModelsToRelax,
                         'The models to run the final relaxation step on. '
                         'If `all`, all models are relaxed, which may be time '
                         'consuming. If `best`, only the most confident model '
@@ -169,7 +162,7 @@ def search_and_predict(
     amber_relaxer: relax.AmberRelaxation,
     benchmark: bool,
     random_seed: int,
-    models_to_relax: ModelsToRelax,
+    models_to_relax: predict.ModelsToRelax,
     use_precomputed_features: bool,
     model_type: str,
 ):
