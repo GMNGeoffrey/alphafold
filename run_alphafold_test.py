@@ -77,7 +77,7 @@ class RunAlphafoldTest(parameterized.TestCase):
       f.write('>A\nAAAAAAAAAAAAA')
     fasta_name = 'test'
 
-    run_alphafold.predict_structure(
+    run_alphafold.search_and_predict(
         fasta_path=fasta_path,
         fasta_name=fasta_name,
         output_dir_base=out_dir,
