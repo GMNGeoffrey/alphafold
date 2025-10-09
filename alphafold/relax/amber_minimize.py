@@ -92,7 +92,15 @@ def _openmm_minimize(
     _add_restraints(system, pdb, stiffness, restraint_set, exclude_residues)
 
   integrator = openmm.LangevinIntegrator(0, 0.01, 0.0)
-  platform = openmm.Platform.getPlatformByName("OpenCL" if use_gpu else "CPU")
+  if use_gpu:
+    try:
+      platform = openmm.Platform.getPlatformByName("CUDA")
+    except Exception as e:  # pylint: disable=broad-except
+      logging.warning("Exception occurred getting OpenMM platform CUDA. Falling back to OpenCL: %s", e)
+      platform = openmm.Platform.getPlatformByName("OpenCL")
+  else:
+    platform = openmm.Platform.getPlatformByName("CPU")
+
   simulation = openmm_app.Simulation(
       pdb.topology, system, integrator, platform)
   simulation.context.setPositions(pdb.positions)
