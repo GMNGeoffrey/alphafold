@@ -211,17 +211,18 @@ def search_and_predict(
       pickle.dump(feature_dict, f, protocol=4)
 
 
-  timings.update(predict.predict_structure(
-      fasta_name=fasta_name,
-      output_dir_base=output_dir_base,
-      feature_dict=feature_dict,
-      model_runners=model_runners,
-      amber_relaxer=amber_relaxer,
-      benchmark=benchmark,
-      random_seed=random_seed,
-      models_to_relax=models_to_relax,
-      model_type=model_type,
-  ))
+  if model_runners:
+    timings.update(predict.predict_structure(
+        fasta_name=fasta_name,
+        output_dir_base=output_dir_base,
+        feature_dict=feature_dict,
+        model_runners=model_runners,
+        amber_relaxer=amber_relaxer,
+        benchmark=benchmark,
+        random_seed=random_seed,
+        models_to_relax=models_to_relax,
+        model_type=model_type,
+    ))
 
   logging.info('Final timings for %s: %s', fasta_name, timings)
 
