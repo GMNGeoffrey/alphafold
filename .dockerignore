@@ -10,12 +10,13 @@ docs/
 imgs/
 notebooks/
 
-# The rest of this file mirrors .gitignore but with automated adjustments for
+# The rest of this file mirrors .gitignore but with adjustments for
 # dockerignore's slightly different syntax
 
 # Users are asked to download this file separately, probably because it's GPL
 # licensed and they don't want to deal with distribution.
-**/alphafold/common/stereo_chemical_props.txt
+alphafold/common/stereo_chemical_props.txt
+output
 
 # Python
 **/__pycache__

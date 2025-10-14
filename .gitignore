@@ -1,6 +1,7 @@
 # Users are asked to download this file separately, probably because it's GPL
 # licensed and they don't want to deal with distribution.
-alphafold/common/stereo_chemical_props.txt
+/alphafold/common/stereo_chemical_props.txt
+/output
 
 # Python
 __pycache__
