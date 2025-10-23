@@ -101,9 +101,6 @@ def predict_structures(
   output_dir = os.path.join(output_dir_base, fasta_name)
   if not os.path.exists(output_dir):
     os.makedirs(output_dir)
-  msa_output_dir = os.path.join(output_dir, 'msas')
-  if not os.path.exists(msa_output_dir):
-    os.makedirs(msa_output_dir)
 
   features_output_pkl_path = os.path.join(output_dir, 'features.pkl')
   features_output_npz_path = os.path.join(output_dir, 'features.npz')
