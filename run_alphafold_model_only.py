@@ -17,6 +17,7 @@
 import enum
 import json
 import os
+import pathlib
 import pickle
 import random
 import sys
@@ -37,9 +38,13 @@ import numpy as np
 logging.set_verbosity(logging.INFO)
 
 flags.DEFINE_list(
-    'fasta_names',
+    'feature_paths',
     None,
-    'Names of FASTA output directories already containing computed features',
+    'Paths to features.npz files with precomputed features. Paths should be'
+    ' separated by commas. All FASTA paths must have a unique basename as the'
+    ' basename is used to name the output directories for each prediction.'
+    ' These should generally match the basename of the FASTA file that was used'
+    ' to create the features.',
 )
 
 flags.DEFINE_string('data_dir', None, 'Path to directory of supporting data.')
@@ -113,7 +118,8 @@ RELAX_MAX_OUTER_ITERATIONS = 3
 
 
 def predict_structures(
-    fasta_name: str,
+    feature_path: str,
+    system_name: str,
     output_dir_base: str,
     model_runners: Dict[str, model.RunModel],
     amber_relaxer: relax.AmberRelaxation,
@@ -123,34 +129,22 @@ def predict_structures(
     model_type: str,
 ):
   """Predicts structure using AlphaFold for the given sequence."""
-  logging.info('Predicting %s', fasta_name)
+  logging.info('Predicting %s', system_name)
   timings = {}
-  output_dir = os.path.join(output_dir_base, fasta_name)
+  output_dir = os.path.join(output_dir_base, system_name)
   if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-  features_output_pkl_path = os.path.join(output_dir, 'features.pkl')
-  features_output_npz_path = os.path.join(output_dir, 'features.npz')
+  if not os.path.exists(feature_path):
+    raise ValueError('Feature file %s does not exist' % feature_path)
 
   feature_dict = None
-  if os.path.exists(features_output_npz_path):
-    logging.info('Reading features from %s', features_output_npz_path)
-    with np.load(features_output_npz_path, allow_pickle=False) as data:
-      feature_dict = {k: data[k] for k in data.files}
-  # Fall back to older pickle format
-  elif os.path.exists(features_output_pkl_path):
-    logging.info('Reading features from %s', features_output_pkl_path)
-    with open(features_output_pkl_path, 'rb') as f:
-      feature_dict = pickle.load(f)
-  else:
-    raise ValueError(
-        'Cannot find existing features at either %s or %s.',
-        features_output_npz_path,
-        features_output_pkl_path,
-    )
+  logging.info('Reading features from %s', feature_path)
+  with np.load(feature_path, allow_pickle=False) as data:
+    feature_dict = {k: data[k] for k in data.files}
 
   timings = predict.predict_structure(
-      fasta_name=fasta_name,
+      fasta_name=system_name,
       output_dir_base=output_dir_base,
       feature_dict=feature_dict,
       model_runners=model_runners,
@@ -161,7 +155,7 @@ def predict_structures(
       model_type=model_type,
   )
 
-  logging.info('Final timings for %s: %s', fasta_name, timings)
+  logging.info('Final timings for %s: %s', system_name, timings)
 
   timings_output_path = os.path.join(output_dir, 'timings.json')
   with open(timings_output_path, 'w') as f:
@@ -176,9 +170,9 @@ def main(argv):
   model_type = 'Multimer' if run_multimer_system else 'Monomer'
 
   # Check for duplicate FASTA file names.
-  fasta_names = FLAGS.fasta_names
-  if len(fasta_names) != len(set(fasta_names)):
-    raise ValueError('All FASTA names must be unique.')
+  system_names = [pathlib.Path(p).stem for p in FLAGS.feature_paths]
+  if len(system_names) != len(set(system_names)):
+    raise ValueError('All feature paths must have a unique basename.')
 
   if run_multimer_system:
     num_predictions_per_model = FLAGS.num_multimer_predictions_per_model
@@ -215,9 +209,10 @@ def main(argv):
   logging.info('Using random seed %d for the data pipeline', random_seed)
 
   # Predict structure for each of the sequences.
-  for fasta_name in fasta_names:
+  for i, feature_path in enumerate(FLAGS.feature_paths):
     predict_structures(
-        fasta_name=fasta_name,
+        feature_path=feature_path,
+        system_name=system_names[i],
         output_dir_base=FLAGS.output_dir,
         model_runners=model_runners,
         amber_relaxer=amber_relaxer,
@@ -230,7 +225,7 @@ def main(argv):
 
 if __name__ == '__main__':
   flags.mark_flags_as_required([
-      'fasta_names',
+      'feature_paths',
       'output_dir',
       'data_dir',
       'use_gpu_relax',
