@@ -156,6 +156,8 @@ def predict_structure(
         fasta_name,
         t_diff,
     )
+    num_recycles = prediction_result['num_recycles'].item()
+    timings[f'num_recycles_{model_name}'] = num_recycles
 
     if benchmark:
       t_0 = time.time()
