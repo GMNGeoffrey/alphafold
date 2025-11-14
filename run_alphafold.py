@@ -180,6 +180,19 @@ flags.DEFINE_integer(
     'deterministic, because processes like GPU inference are '
     'nondeterministic.',
 )
+flags.DEFINE_boolean(
+    'consistent_random_seeds',
+    None,
+    'By default, each model '
+    'uses a different random seed based on the one set with '
+    '--random_seed. If this is set, they will instead all be '
+    'initialized with the same random seed. If '
+    '--num_multimer_predictions_per_model is greater than 1, '
+    'a different random seed will still be used for subsequent '
+    'predictions, but the nth prediction will always use the '
+    'same random seed regardless of how many predictions are '
+    'made.',
+)
 flags.DEFINE_integer(
     'num_multimer_predictions_per_model',
     5,
@@ -273,10 +286,9 @@ def search_and_predict(
     fasta_name: str,
     output_dir_base: str,
     data_pipeline: Union[pipeline.DataPipeline, pipeline_multimer.DataPipeline],
-    model_runners: Dict[str, model.RunModel],
+    model_runners: Dict[str, tuple[int, model.RunModel]],
     amber_relaxer: relax.AmberRelaxation,
     benchmark: bool,
-    random_seed: int,
     models_to_relax: predict.ModelsToRelax,
     use_precomputed_features: bool,
     model_type: str,
@@ -329,6 +341,14 @@ def search_and_predict(
     with open(features_output_pkl_path, 'wb') as f:
       pickle.dump(feature_dict, f, protocol=4)
 
+  random_seeds_output_path = os.path.join(output_dir, 'random_seeds_debug.json')
+  with open(random_seeds_output_path, 'w') as f:
+    f.write(
+        json.dumps(
+            {name: seed for name, (seed, _) in model_runners.items()}, indent=4
+        )
+    )
+
   if model_runners:
     timings.update(
         predict.predict_structure(
@@ -338,7 +358,6 @@ def search_and_predict(
             model_runners=model_runners,
             amber_relaxer=amber_relaxer,
             benchmark=benchmark,
-            random_seed=random_seed,
             models_to_relax=models_to_relax,
             model_type=model_type,
         )
@@ -462,9 +481,56 @@ def main(argv):
     num_predictions_per_model = 1
     data_pipeline = monomer_data_pipeline
 
-  model_runners = {}
+
   model_names = config.MODEL_PRESETS[FLAGS.model_preset]
-  for model_name in model_names:
+  num_total_model_predictions = len(model_names) * num_predictions_per_model
+
+  random_seed = FLAGS.random_seed
+  if FLAGS.consistent_random_seeds:
+    max_seed_size = sys.maxsize - num_predictions_per_model
+    if random_seed is None:
+      random_seed = random.randrange(max_seed_size)
+    elif random_seed > max_seed_size:
+      raise ValueError(
+          'Random seed %d is larger than maximum seed size %d. '
+          'It must be less than sys.maxsize (%d) - '
+          'predictions per model (%d)',
+          random_seed,
+          max_seed_size,
+          sys.maxsize,
+          num_predictions_per_model,
+      )
+    model_random_seeds = list(
+        range(random_seed, random_seed + num_predictions_per_model)
+    ) * len(model_names)
+  else:
+    # For historical reasons/backward compatibility, this is the maximum allowable size
+    max_seed_size = sys.maxsize // num_total_model_predictions
+    if random_seed is None:
+      random_seed = random.randrange(max_seed_size)
+    elif random_seed > max_seed_size:
+      raise ValueError(
+          'Random seed %d is larger than maximum seed size %d. '
+          'It must be less than sys.maxsize (%d) // '
+          'total number of model predictions (%d)',
+          random_seed,
+          max_seed_size,
+          sys.maxsize,
+          num_total_model_predictions,
+      )
+    model_random_seeds = list(
+        range(random_seed, random_seed + num_total_model_predictions)
+    )
+
+  logging.info('Using random seed %d', random_seed)
+  assert len(model_random_seeds) == num_total_model_predictions, (
+      'Should have same number of model random seeds'
+      f' ({len(model_random_seeds)}) as model predictions'
+      f' ({num_total_model_predictions})'
+  )
+
+  model_runners = {}
+  for i, model_name in enumerate(model_names):
     model_config = config.model_config(model_name)
     if run_multimer_system:
       model_config.model.num_ensemble_eval = num_ensemble
@@ -474,11 +540,22 @@ def main(argv):
         model_name=model_name, data_dir=FLAGS.data_dir
     )
     model_runner = model.RunModel(model_config, model_params)
-    for i in range(num_predictions_per_model):
-      model_runners[f'{model_name}_pred_{i}'] = model_runner
+    for j in range(num_predictions_per_model):
+      model_index = i * num_predictions_per_model + j
+      model_random_seed = model_random_seeds[model_index]
+      model_runners[f'{model_name}_pred_{j}'] = (
+          model_random_seed,
+          model_runner,
+      )
 
   logging.info(
-      'Have %d models: %s', len(model_runners), list(model_runners.keys())
+      'Have %d model predictions: %s',
+      len(model_runners),
+      list(model_runners.keys()),
+  )
+  assert len(model_runners) == num_total_model_predictions, (
+      f'Should have same number of model runners ({len(model_runners)}) '
+      f'as model predictions ({num_total_model_predictions})'
   )
 
   amber_relaxer = relax.AmberRelaxation(
@@ -489,11 +566,6 @@ def main(argv):
       max_outer_iterations=RELAX_MAX_OUTER_ITERATIONS,
       use_gpu=FLAGS.use_gpu_relax,
   )
-
-  random_seed = FLAGS.random_seed
-  if random_seed is None:
-    random_seed = random.randrange(sys.maxsize // len(model_runners))
-  logging.info('Using random seed %d for the data pipeline', random_seed)
 
   # Predict structure for each of the sequences.
   for i, fasta_path in enumerate(FLAGS.fasta_paths):
@@ -506,7 +578,6 @@ def main(argv):
         model_runners=model_runners,
         amber_relaxer=amber_relaxer,
         benchmark=FLAGS.benchmark,
-        random_seed=random_seed,
         models_to_relax=FLAGS.models_to_relax,
         use_precomputed_features=FLAGS.use_precomputed_features,
         model_type=model_type,

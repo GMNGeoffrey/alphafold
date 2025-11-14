@@ -113,7 +113,6 @@ def predict_structure(
     model_runners: Dict[str, model.RunModel],
     amber_relaxer: relax.AmberRelaxation,
     benchmark: bool,
-    random_seed: int,
     models_to_relax: ModelsToRelax,
     model_type: str,
 ):
@@ -131,13 +130,16 @@ def predict_structure(
   ranking_confidences = {}
 
   # Run the models.
-  num_models = len(model_runners)
-  for model_index, (model_name, model_runner) in enumerate(
+  for model_index, (model_name, (model_random_seed, model_runner)) in enumerate(
       model_runners.items()
   ):
-    logging.info('Running model %s on %s', model_name, fasta_name)
+    logging.info(
+        'Running model %s on %s with seed %d',
+        model_name,
+        fasta_name,
+        model_random_seed,
+    )
     t_0 = time.time()
-    model_random_seed = model_index + random_seed * num_models
     processed_feature_dict = model_runner.process_features(
         feature_dict, random_seed=model_random_seed
     )
