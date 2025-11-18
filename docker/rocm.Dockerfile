@@ -47,7 +47,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
   'tensorflow-cpu==2.20.0' \
   # Someone republished this on PyPI, so we don't have to go through conda, hence the odd name
   'pdbfixer-wheel==1.11.0' \
-  'openmm==8.3.1'
+  'openmm==8.3.1' \
+  # This isn't actually an alphafold dependency, but we use it for eval and it's
+  # small, so I'm throwing it in here for now.
+  'DockQ'
 
 # Add SETUID bit to the ldconfig binary so that non-root users can run it.
 RUN chmod u+s /sbin/ldconfig.real
