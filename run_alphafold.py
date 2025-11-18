@@ -202,6 +202,12 @@ flags.DEFINE_integer(
     'models then there will be 10 predictions per input. '
     'Note: this FLAG only applies if model_preset=multimer',
 )
+flags.DEFINE_bool(
+    'clear_cache',
+    False,
+    'Whether to clear the JAX compilation cache between predictions. '
+    'This can reduce memory usage but may increase runtime.',
+)
 flags.DEFINE_boolean(
     'use_precomputed_msas',
     False,
@@ -289,6 +295,7 @@ def search_and_predict(
     model_runners: Dict[str, tuple[int, model.RunModel]],
     amber_relaxer: relax.AmberRelaxation,
     benchmark: bool,
+    clear_cache: bool,
     models_to_relax: predict.ModelsToRelax,
     use_precomputed_features: bool,
     model_type: str,
@@ -358,6 +365,7 @@ def search_and_predict(
             model_runners=model_runners,
             amber_relaxer=amber_relaxer,
             benchmark=benchmark,
+            clear_cache=clear_cache,
             models_to_relax=models_to_relax,
             model_type=model_type,
         )
@@ -481,7 +489,6 @@ def main(argv):
     num_predictions_per_model = 1
     data_pipeline = monomer_data_pipeline
 
-
   model_names = config.MODEL_PRESETS[FLAGS.model_preset]
   num_total_model_predictions = len(model_names) * num_predictions_per_model
 
@@ -578,6 +585,7 @@ def main(argv):
         model_runners=model_runners,
         amber_relaxer=amber_relaxer,
         benchmark=FLAGS.benchmark,
+        clear_cache=FLAGS.clear_cache,
         models_to_relax=FLAGS.models_to_relax,
         use_precomputed_features=FLAGS.use_precomputed_features,
         model_type=model_type,

@@ -22,6 +22,7 @@ import time
 from typing import Any, Dict
 
 from absl import logging
+import jax
 from alphafold.common import confidence
 from alphafold.common import protein
 from alphafold.common import residue_constants
@@ -113,6 +114,7 @@ def predict_structure(
     model_runners: Dict[str, model.RunModel],
     amber_relaxer: relax.AmberRelaxation,
     benchmark: bool,
+    clear_cache: bool,
     models_to_relax: ModelsToRelax,
     model_type: str,
 ):
@@ -221,6 +223,10 @@ def predict_structure(
         file_id=str(model_index),
         model_type=model_type,
     )
+
+    if clear_cache:
+      logging.info('Clearing JAX compilation cache.')
+      jax.clear_caches()
 
   # Rank by model confidence.
   ranked_order = [

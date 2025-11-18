@@ -104,6 +104,12 @@ flags.DEFINE_integer(
     'models then there will be 10 predictions per input. '
     'Note: this FLAG only applies if model_preset=multimer',
 )
+flags.DEFINE_bool(
+    'clear_cache',
+    False,
+    'Whether to clear the JAX compilation cache between models. '
+    'This can reduce memory usage but may increase runtime.',
+)
 flags.DEFINE_enum_class(
     'models_to_relax',
     predict.ModelsToRelax.BEST,
@@ -143,6 +149,7 @@ def predict_structures(
     model_runners: Dict[str, tuple[int, model.RunModel]],
     amber_relaxer: relax.AmberRelaxation,
     benchmark: bool,
+    clear_cache: bool,
     models_to_relax: predict.ModelsToRelax,
     model_type: str,
 ):
@@ -176,6 +183,7 @@ def predict_structures(
       model_runners=model_runners,
       amber_relaxer=amber_relaxer,
       benchmark=benchmark,
+      clear_cache=clear_cache,
       models_to_relax=models_to_relax,
       model_type=model_type,
   )
@@ -306,6 +314,7 @@ def main(argv):
         model_runners=model_runners,
         amber_relaxer=amber_relaxer,
         benchmark=FLAGS.benchmark,
+        clear_cache=FLAGS.clear_cache,
         models_to_relax=FLAGS.models_to_relax,
         model_type=model_type,
     )
