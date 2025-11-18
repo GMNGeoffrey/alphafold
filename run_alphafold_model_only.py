@@ -59,6 +59,12 @@ flags.DEFINE_enum(
     'the monomer model with extra ensembling, monomer model with '
     'pTM head, or multimer model',
 )
+flags.DEFINE_list(
+    'model_names',
+    None,
+    'Names of models to use. If not set, all models for the preset will be'
+    ' used.',
+)
 flags.DEFINE_boolean(
     'benchmark',
     False,
@@ -199,6 +205,18 @@ def main(argv):
     num_predictions_per_model = 1
 
   model_names = config.MODEL_PRESETS[FLAGS.model_preset]
+  if FLAGS.model_names is not None:
+    model_names = [m for m in model_names if m in FLAGS.model_names]
+
+    if len(model_names) != len(FLAGS.model_names):
+      invalid_models = set(FLAGS.model_names) - set(model_names)
+      logging.error(
+          'Invalid model names: %s. Valid names are: %s',
+          ', '.join(invalid_models),
+          ', '.join(config.MODEL_PRESETS[FLAGS.model_preset]),
+      )
+      raise ValueError('Some model names in --model_names are not valid.')
+
   num_total_model_predictions = len(model_names) * num_predictions_per_model
 
   random_seed = FLAGS.random_seed
