@@ -59,6 +59,20 @@ flags.DEFINE_enum(
     'the monomer model with extra ensembling, monomer model with '
     'pTM head, or multimer model',
 )
+flags.DEFINE_integer(
+    'num_recycle',
+    None,
+    'The number of recycle steps to perform. By default, uses the setting from'
+    ' the model configuration.',
+)
+flags.DEFINE_float(
+    'recycle_early_stop_tolerance',
+    None,
+    'A positive value will stop prediction early if the difference in pairwise'
+    ' distances between recycling steps is less than the tolerance. A negative'
+    ' value will disable early stopping, i.e. the model will always run'
+    ' `num_recycle` number of recycling iterations.',
+)
 flags.DEFINE_list(
     'model_names',
     None,
@@ -274,6 +288,12 @@ def main(argv):
   model_runners = {}
   for i, model_name in enumerate(model_names):
     model_config = config.model_config(model_name)
+    if FLAGS.num_recycle is not None:
+      model_config.model.num_recycle = FLAGS.num_recycle
+    if FLAGS.recycle_early_stop_tolerance is not None:
+      model_config.model.recycle_early_stop_tolerance = (
+          FLAGS.recycle_early_stop_tolerance
+      )
     model_params = data.get_model_haiku_params(
         model_name=model_name, data_dir=FLAGS.data_dir
     )
