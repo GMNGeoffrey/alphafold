@@ -7,7 +7,19 @@ if ! command -v parallel >/dev/null 2>&1; then
     exit 1
 fi
 
-TOTAL_GPUS=8
+if command -v nvidia-smi >/dev/null; then
+    TOTAL_GPUS="$(nvidia-smi --list-gpus | wc -l)"
+elif command -v amd-smi >/dev/null; then
+    TOTAL_GPUS="$(amd-smi list | grep -c "^GPU" || true)"
+else
+    echo "Neither nvidia-smi nor amd-smi found. Cannot detect GPUs." >&2
+    exit 1
+fi
+
+if ! (( TOTAL_GPUS > 0 )); then
+    echo "No GPUs found (TOTAL_GPUS=${TOTAL_GPUS})" >&2
+    exit 1
+fi
 TOTAL_CORES="$(nproc --all)"
 
 if (( TOTAL_CORES % TOTAL_GPUS != 0 )); then
@@ -16,12 +28,20 @@ if (( TOTAL_CORES % TOTAL_GPUS != 0 )); then
     exit 1
 fi
 
-CORES_PER_JOB="$((TOTAL_CORES / TOTAL_GPUS))"
+CORES_PER_JOB="$(( TOTAL_CORES / TOTAL_GPUS ))"
 RUN_NAME="${RUN_NAME:-$(TZ=UTC date +%F-%H-%M-%S)}"
 
-INPUT_DIR="${INPUT_DIR:-features}"
+INPUT_DIR="${INPUT_DIR:-/data/alphafold-inputs/features}"
 DATA_DIR="${DATA_DIR:-/data/alphafold}"
 OUTPUT_DIR="${OUTPUT_DIR:-output/local/${RUN_NAME}}"
+
+if [[ -d "${OUTPUT_DIR}" ]]; then
+    echo "Output directory ${OUTPUT_DIR} already exists." >&2
+    exit 1
+fi
+
+echo "Making output directory ${OUTPUT_DIR}"
+mkdir -p "${OUTPUT_DIR}"
 
 declare -a COMPLEXES=(
     "7fci"
@@ -107,14 +127,13 @@ declare -a MODEL_INDICES=($(seq 1 5))
 
 total_jobs="$(( ${#COMPLEXES[@]} * ${#SEEDS[@]} * ${#MODEL_INDICES[@]} ))"
 
-mkdir -p "${OUTPUT_DIR}"
-
 echo "Launching ${total_jobs} jobs on 1 node:"
 echo "- ${#COMPLEXES[@]} complexes x ${#SEEDS[@]} seeds x ${#MODEL_INDICES[@]} model indices"
 echo "- ${TOTAL_GPUS} GPUs, ${TOTAL_CORES} cores (${CORES_PER_JOB} cores/job)"
 
 JOBS_FILE="${OUTPUT_DIR}/jobs.txt"
-: > "${JOBS_FILE}"
+# This shouldn't already exist, but clear it just in case
+> "${JOBS_FILE}"
 
 for seed in "${SEEDS[@]}"; do
     for model_index in "${MODEL_INDICES[@]}"; do
@@ -126,10 +145,11 @@ done
 
 export INPUT_DIR DATA_DIR OUTPUT_DIR CORES_PER_JOB
 
-parallel --jobs "${TOTAL_GPUS}" \
+# exec so that any edits to the shell script don't confuse things
+exec parallel --jobs "${TOTAL_GPUS}" \
     --colsep ' ' \
     --line-buffer \
     --joblog "${OUTPUT_DIR}/joblog.txt" \
-    --halt now,fail=1 \
+    --bar \
     'COMPLEX_NAME={1} SEED={2} MODEL_INDEX={3} SLOT={%} benchmarking/run_job.sh' \
     :::: "${JOBS_FILE}"

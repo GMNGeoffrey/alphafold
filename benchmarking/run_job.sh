@@ -38,4 +38,4 @@ mkdir -p "${RUN_OUTPUT_DIR}"
          --random_seed="${SEED}" \
          --consistent_random_seeds \
          --use_gpu_relax \
-) 2>&1 | tee "${RUN_OUTPUT_DIR}/output.log"
+) &> "${RUN_OUTPUT_DIR}/output.log"
