@@ -143,7 +143,8 @@ for seed in "${SEEDS[@]}"; do
     done
 done
 
-export INPUT_DIR DATA_DIR OUTPUT_DIR CORES_PER_JOB
+# We put all the env vars in the explicit job invocation for reproducibility and
+# so the full command is in the joblog file.
 
 # exec so that any edits to the shell script don't confuse things
 exec parallel --jobs "${TOTAL_GPUS}" \
@@ -151,5 +152,6 @@ exec parallel --jobs "${TOTAL_GPUS}" \
     --line-buffer \
     --joblog "${OUTPUT_DIR}/joblog.txt" \
     --bar \
-    'COMPLEX_NAME={1} SEED={2} MODEL_INDEX={3} SLOT={%} benchmarking/run_job.sh' \
+    --halt now,fail=1 \
+    "COMPLEX_NAME={1} SEED={2} MODEL_INDEX={3} SLOT={%} INPUT_DIR=${INPUT_DIR} DATA_DIR=${DATA_DIR} OUTPUT_DIR=${OUTPUT_DIR} CORES_PER_JOB=${CORES_PER_JOB} benchmarking/run_job.sh" \
     :::: "${JOBS_FILE}"
