@@ -21,7 +21,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   tzdata \
   # Workaround for https://github.com/ROCm/rocm-jax/issues/163
   libdw1t64 \
-  wget
+  wget \
+  # Not an alphafold dependency, but we use it for runs on a single node with gnu-parallel
+  parallel
 
 RUN git clone --branch v3.3.0 --single-branch https://github.com/soedinglab/hh-suite.git /tmp/hh-suite \
   && pushd /tmp/hh-suite \
