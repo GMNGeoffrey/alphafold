@@ -1,4 +1,10 @@
-FROM docker.io/rocm/jax:rocm7.1-jax0.7.1-py3.12
+# A docker image to run alphafold on ROCm
+
+# This is broken into two stages so that you can build just the deps stage as
+# its own image and mount your own alphafold source directory instead of copying
+# it in, e.g.
+# docker build --target deps -t alphafold-deps - <docker/rocm.Dockerfile
+FROM docker.io/rocm/jax:rocm7.1-jax0.7.1-py3.12 AS deps
 
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 ENV JAX_PLATFORMS="gpu,cpu"
@@ -54,6 +60,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # Add SETUID bit to the ldconfig binary so that non-root users can run it.
 RUN chmod u+s /sbin/ldconfig.real
+
+FROM deps
 
 COPY --link . /app/alphafold
 # I assume this tiny text file isn't just included upstream because of its GPL license
