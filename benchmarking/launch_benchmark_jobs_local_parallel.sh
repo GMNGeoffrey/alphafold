@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Use gnu-parallel to launch a bunch of alphafold jobs. This probably isn't the
+# best approach for an actual production use case, where you'd either want to
+# use kubernetes or probably a python-based system with more shared resources
+# between jobs, but for benchmarking we prioritize a consistent environment
+# where the efficiencies of sharing are not desirable because they introduce
+# variability (e.g. we use taskset within each job).
+
 set -euo pipefail
 
 if ! command -v parallel >/dev/null 2>&1; then
@@ -150,5 +157,5 @@ exec parallel --jobs "${TOTAL_GPUS}" \
     --line-buffer \
     --joblog "${OUTPUT_DIR}/joblog.txt" \
     --bar \
-    "COMPLEX_NAME={1} SEED={2} MODEL_INDEX={3} SLOT={%} INPUT_DIR=${INPUT_DIR} DATA_DIR=${DATA_DIR} OUTPUT_DIR=${OUTPUT_DIR} CORES_PER_JOB=${CORES_PER_JOB} benchmarking/run_job.sh" \
+    "COMPLEX_NAME={1} SEED={2} MODEL_INDEX={3} SLOT={%} INPUT_DIR=${INPUT_DIR} DATA_DIR=${DATA_DIR} OUTPUT_DIR=${OUTPUT_DIR} CORES_PER_JOB=${CORES_PER_JOB} benchmarking/run_benchmark_job.sh" \
     :::: "${JOBS_FILE}"

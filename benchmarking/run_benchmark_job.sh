@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Launch a benchmarking job for a single complex-seed-model combination. This is
+# constructed to be launched with the accompanying gnu-parallel
+# launch_benchmark_jobs_local_parallel.sh script, but can be run directly by
+# setting the correct environment variables. It prioritizes a consistent
+# benchmarking environment over maximum performance (e.g. by using taskset).
+
 set -euo pipefail
 
 # Required environment variables:
