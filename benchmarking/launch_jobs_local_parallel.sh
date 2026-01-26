@@ -132,8 +132,6 @@ echo "- ${#COMPLEXES[@]} complexes x ${#SEEDS[@]} seeds x ${#MODEL_INDICES[@]} m
 echo "- ${TOTAL_GPUS} GPUs, ${TOTAL_CORES} cores (${CORES_PER_JOB} cores/job)"
 
 JOBS_FILE="${OUTPUT_DIR}/jobs.txt"
-# This shouldn't already exist, but clear it just in case
-> "${JOBS_FILE}"
 
 for seed in "${SEEDS[@]}"; do
     for model_index in "${MODEL_INDICES[@]}"; do
