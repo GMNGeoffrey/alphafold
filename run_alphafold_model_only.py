@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Full AlphaFold protein structure prediction script."""
+
 import enum
 import json
 import os
@@ -36,44 +37,70 @@ import numpy as np
 logging.set_verbosity(logging.INFO)
 
 flags.DEFINE_list(
-    'fasta_names', None, 'Names of FASTA output directories already containing '
-    'computed features')
+    'fasta_names',
+    None,
+    'Names of FASTA output directories already containing computed features',
+)
 
 flags.DEFINE_string('data_dir', None, 'Path to directory of supporting data.')
-flags.DEFINE_string('output_dir', None, 'Path to a directory that will '
-                    'store the results.')
-flags.DEFINE_enum('model_preset', 'monomer',
-                  ['monomer', 'monomer_casp14', 'monomer_ptm', 'multimer'],
-                  'Choose preset model configuration - the monomer model, '
-                  'the monomer model with extra ensembling, monomer model with '
-                  'pTM head, or multimer model')
-flags.DEFINE_boolean('benchmark', False, 'Run multiple JAX model evaluations '
-                     'to obtain a timing that excludes the compilation time, '
-                     'which should be more indicative of the time required for '
-                     'inferencing many proteins.')
-flags.DEFINE_integer('random_seed', None, 'The random seed for the data '
-                     'pipeline. By default, this is randomly generated. Note '
-                     'that even if this is set, Alphafold may still not be '
-                     'deterministic, because processes like GPU inference are '
-                     'nondeterministic.')
-flags.DEFINE_integer('num_multimer_predictions_per_model', 5, 'How many '
-                     'predictions (each with a different random seed) will be '
-                     'generated per model. E.g. if this is 2 and there are 5 '
-                     'models then there will be 10 predictions per input. '
-                     'Note: this FLAG only applies if model_preset=multimer')
-flags.DEFINE_enum_class('models_to_relax', predict.ModelsToRelax.BEST, predict.ModelsToRelax,
-                        'The models to run the final relaxation step on. '
-                        'If `all`, all models are relaxed, which may be time '
-                        'consuming. If `best`, only the most confident model '
-                        'is relaxed. If `none`, relaxation is not run. Turning '
-                        'off relaxation might result in predictions with '
-                        'distracting stereochemical violations but might help '
-                        'in case you are having issues with the relaxation '
-                        'stage.')
-flags.DEFINE_boolean('use_gpu_relax', None, 'Whether to relax on GPU. '
-                     'Relax on GPU can be much faster than CPU, so it is '
-                     'recommended to enable if possible. GPUs must be available'
-                     ' if this setting is enabled.')
+flags.DEFINE_string(
+    'output_dir', None, 'Path to a directory that will store the results.'
+)
+flags.DEFINE_enum(
+    'model_preset',
+    'monomer',
+    ['monomer', 'monomer_casp14', 'monomer_ptm', 'multimer'],
+    'Choose preset model configuration - the monomer model, '
+    'the monomer model with extra ensembling, monomer model with '
+    'pTM head, or multimer model',
+)
+flags.DEFINE_boolean(
+    'benchmark',
+    False,
+    'Run multiple JAX model evaluations '
+    'to obtain a timing that excludes the compilation time, '
+    'which should be more indicative of the time required for '
+    'inferencing many proteins.',
+)
+flags.DEFINE_integer(
+    'random_seed',
+    None,
+    'The random seed for the data '
+    'pipeline. By default, this is randomly generated. Note '
+    'that even if this is set, Alphafold may still not be '
+    'deterministic, because processes like GPU inference are '
+    'nondeterministic.',
+)
+flags.DEFINE_integer(
+    'num_multimer_predictions_per_model',
+    5,
+    'How many '
+    'predictions (each with a different random seed) will be '
+    'generated per model. E.g. if this is 2 and there are 5 '
+    'models then there will be 10 predictions per input. '
+    'Note: this FLAG only applies if model_preset=multimer',
+)
+flags.DEFINE_enum_class(
+    'models_to_relax',
+    predict.ModelsToRelax.BEST,
+    predict.ModelsToRelax,
+    'The models to run the final relaxation step on. '
+    'If `all`, all models are relaxed, which may be time '
+    'consuming. If `best`, only the most confident model '
+    'is relaxed. If `none`, relaxation is not run. Turning '
+    'off relaxation might result in predictions with '
+    'distracting stereochemical violations but might help '
+    'in case you are having issues with the relaxation '
+    'stage.',
+)
+flags.DEFINE_boolean(
+    'use_gpu_relax',
+    None,
+    'Whether to relax on GPU. '
+    'Relax on GPU can be much faster than CPU, so it is '
+    'recommended to enable if possible. GPUs must be available'
+    ' if this setting is enabled.',
+)
 
 FLAGS = flags.FLAGS
 
@@ -116,7 +143,11 @@ def predict_structures(
     with open(features_output_pkl_path, 'rb') as f:
       feature_dict = pickle.load(f)
   else:
-    raise ValueError('Cannot find existing features at either %s or %s.', features_output_npz_path, features_output_pkl_path)
+    raise ValueError(
+        'Cannot find existing features at either %s or %s.',
+        features_output_npz_path,
+        features_output_pkl_path,
+    )
 
   timings = predict.predict_structure(
       fasta_name=fasta_name,
@@ -159,13 +190,15 @@ def main(argv):
   for model_name in model_names:
     model_config = config.model_config(model_name)
     model_params = data.get_model_haiku_params(
-        model_name=model_name, data_dir=FLAGS.data_dir)
+        model_name=model_name, data_dir=FLAGS.data_dir
+    )
     model_runner = model.RunModel(model_config, model_params)
     for i in range(num_predictions_per_model):
       model_runners[f'{model_name}_pred_{i}'] = model_runner
 
-  logging.info('Have %d models: %s', len(model_runners),
-               list(model_runners.keys()))
+  logging.info(
+      'Have %d models: %s', len(model_runners), list(model_runners.keys())
+  )
 
   amber_relaxer = relax.AmberRelaxation(
       max_iterations=RELAX_MAX_ITERATIONS,
@@ -173,7 +206,8 @@ def main(argv):
       stiffness=RELAX_STIFFNESS,
       exclude_residues=RELAX_EXCLUDE_RESIDUES,
       max_outer_iterations=RELAX_MAX_OUTER_ITERATIONS,
-      use_gpu=FLAGS.use_gpu_relax)
+      use_gpu=FLAGS.use_gpu_relax,
+  )
 
   random_seed = FLAGS.random_seed
   if random_seed is None:
