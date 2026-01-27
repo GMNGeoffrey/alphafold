@@ -144,11 +144,6 @@ def main(argv):
   run_multimer_system = 'multimer' in FLAGS.model_preset
   model_type = 'Multimer' if run_multimer_system else 'Monomer'
 
-  if FLAGS.model_preset == 'monomer_casp14':
-    num_ensemble = 8
-  else:
-    num_ensemble = 1
-
   # Check for duplicate FASTA file names.
   fasta_names = FLAGS.fasta_names
   if len(fasta_names) != len(set(fasta_names)):
@@ -163,10 +158,6 @@ def main(argv):
   model_names = config.MODEL_PRESETS[FLAGS.model_preset]
   for model_name in model_names:
     model_config = config.model_config(model_name)
-    if run_multimer_system:
-      model_config.model.num_ensemble_eval = num_ensemble
-    else:
-      model_config.data.eval.num_ensemble = num_ensemble
     model_params = data.get_model_haiku_params(
         model_name=model_name, data_dir=FLAGS.data_dir)
     model_runner = model.RunModel(model_config, model_params)
