@@ -30,18 +30,20 @@ RUN_OUTPUT_DIR="${OUTPUT_DIR}/${COMPLEX_NAME}/seed_${SEED}/model_${MODEL_INDEX}"
 mkdir -p "${RUN_OUTPUT_DIR}"
 
 (
-    set -x;
+  set -x;
   CUDA_VISIBLE_DEVICES="${GPU}" taskset -c "${CPU_START}-${CPU_END}" \
-       python run_alphafold_model_only.py \
-         --benchmark \
-         --data_dir="${DATA_DIR}" \
-         --feature_paths="${INPUT_DIR}/${COMPLEX_NAME}.npz" \
-         --model_preset=multimer \
-         --models_to_relax=none \
-         --model_names="${MODEL_NAME}" \
-         --num_multimer_predictions_per_model=1 \
-         --output_dir="${RUN_OUTPUT_DIR}" \
-         --random_seed="${SEED}" \
-         --consistent_random_seeds \
-         --use_gpu_relax \
-) &> "${RUN_OUTPUT_DIR}/output.log"
+      python run_alphafold_model_only.py \
+        --benchmark \
+        --data_dir="${DATA_DIR}" \
+        --feature_paths="${INPUT_DIR}/${COMPLEX_NAME}.npz" \
+        --model_preset=multimer \
+        --models_to_relax=none \
+        --model_names="${MODEL_NAME}" \
+        --num_multimer_predictions_per_model=1 \
+        --output_dir="${RUN_OUTPUT_DIR}" \
+        --random_seed="${SEED}" \
+        --consistent_random_seeds \
+        --use_gpu_relax \
+        --num_recycle=3 \
+        --recycle_early_stop_tolerance=-1 \
+) 2>&1 | tee "${RUN_OUTPUT_DIR}/output.log"

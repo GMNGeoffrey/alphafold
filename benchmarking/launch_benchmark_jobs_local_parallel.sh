@@ -157,5 +157,5 @@ exec parallel --jobs "${TOTAL_GPUS}" \
     --line-buffer \
     --joblog "${OUTPUT_DIR}/joblog.txt" \
     --bar \
-    "COMPLEX_NAME={1} SEED={2} MODEL_INDEX={3} SLOT={%} INPUT_DIR=${INPUT_DIR} DATA_DIR=${DATA_DIR} OUTPUT_DIR=${OUTPUT_DIR} CORES_PER_JOB=${CORES_PER_JOB} benchmarking/run_benchmark_job.sh" \
+    "COMPLEX_NAME={1} SEED={2} MODEL_INDEX={3} SLOT={%} INPUT_DIR=${INPUT_DIR} DATA_DIR=${DATA_DIR} OUTPUT_DIR=${OUTPUT_DIR} CORES_PER_JOB=${CORES_PER_JOB} benchmarking/run_benchmark_job.sh &> /dev/null" \
     :::: "${JOBS_FILE}"
