@@ -21,6 +21,7 @@ from absl.testing import parameterized
 from alphafold.model import predict
 import run_alphafold
 import numpy as np
+
 # Internal import (7716).
 
 TEST_DATA_DIR = 'alphafold/common/testdata/'
