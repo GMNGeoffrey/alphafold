@@ -1,8 +1,45 @@
+# General Docker exclusions
 .dockerignore
-docker/Dockerfile
+.git*
+docker/
+**/Dockerfile
+**/*.Dockerfile
 
-__pycache__
-*.venv
-.git
+# Some project-specific exclusions we don't really need in the docker image
 docs/
 imgs/
+notebooks/
+
+# The rest of this file mirrors .gitignore but with automated adjustments for
+# dockerignore's slightly different syntax
+
+# Users are asked to download this file separately, probably because it's GPL
+# licensed and they don't want to deal with distribution.
+**/alphafold/common/stereo_chemical_props.txt
+
+# Python
+**/__pycache__
+**/*.venv
+**/.Python
+**/build/
+**/develop-eggs/
+**/dist/
+**/downloads/
+**/eggs/
+**/.eggs/
+**/lib/
+**/lib64/
+**/parts/
+**/sdist/
+**/var/
+**/wheels/
+**/share/python-wheels/
+**/*.egg-info/
+**/.installed.cfg
+**/*.egg
+**/MANIFEST
+**/.ipynb_checkpoints/
+
+# vscode
+**/.vscode/
+**/*.code-workspace
