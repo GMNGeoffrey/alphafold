@@ -128,8 +128,8 @@ declare -a SEEDS=($(seq 1 5))
 declare -a MODEL_INDICES=($(seq 1 5))
 
 # For testing
-# COMPLEXES=("7u8c")
-# SEEDS=(1)
+COMPLEXES=("7u8c" "7fci")
+SEEDS=(1)
 # MODEL_INDICES=(1)
 
 total_jobs="$(( ${#COMPLEXES[@]} * ${#SEEDS[@]} * ${#MODEL_INDICES[@]} ))"
@@ -151,11 +151,26 @@ done
 # We put all the env vars in the explicit job invocation for reproducibility and
 # so the full command is in the joblog file.
 
-# exec so that any edits to the shell script don't confuse things
-exec parallel --jobs "${TOTAL_GPUS}" \
+# We want to print something if there are errors
+set +e
+time parallel \
+    --jobs "${TOTAL_GPUS}" \
     --colsep ' ' \
-    --line-buffer \
     --joblog "${OUTPUT_DIR}/joblog.txt" \
     --bar \
     "COMPLEX_NAME={1} SEED={2} MODEL_INDEX={3} SLOT={%} INPUT_DIR=${INPUT_DIR} DATA_DIR=${DATA_DIR} OUTPUT_DIR=${OUTPUT_DIR} CORES_PER_JOB=${CORES_PER_JOB} benchmarking/run_benchmark_job.sh &> /dev/null" \
     :::: "${JOBS_FILE}"
+
+ret=$?
+if (( ret != 0 )); then
+    if (( ret <= 100 )); then
+        echo "${ret} jobs failed" >&2
+    elif (( ret == 101 )); then
+        echo "More than 100 jobs failed" >&2
+    else
+        echo "GNU parallel failed with error code ${ret}" >&2
+    fi
+    exit "${ret}"
+else
+    echo "All jobs completed successfully."
+fi
