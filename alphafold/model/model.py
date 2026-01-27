@@ -14,7 +14,7 @@
 
 """Code for constructing the model."""
 
-from typing import Any, Mapping, Optional, Union
+from typing import Any, Mapping, Optional
 
 from absl import logging
 from alphafold.common import confidence
@@ -26,7 +26,6 @@ import jax
 from jax import tree
 import ml_collections
 import numpy as np
-import tensorflow.compat.v1 as tf
 
 
 def get_confidence_metrics(
@@ -122,31 +121,23 @@ class RunModel:
 
   def process_features(
       self,
-      raw_features: Union[tf.train.Example, features.FeatureDict],
+      raw_features: features.FeatureDict,
       random_seed: int,
   ) -> features.FeatureDict:
     """Processes features to prepare for feeding them into the model.
 
     Args:
-      raw_features: The output of the data pipeline either as a dict of NumPy
-        arrays or as a tf.train.Example.
+      raw_features: The output of the data pipeline as a dict of NumPy arrays.
       random_seed: The random seed to use when processing the features.
 
     Returns:
       A dict of NumPy feature arrays suitable for feeding into the model.
     """
-
     if self.multimer_mode:
       return raw_features
-
-    # Single-chain mode.
-    if isinstance(raw_features, dict):
+    else:
       return features.np_example_to_features(
           np_example=raw_features, config=self.config, random_seed=random_seed
-      )
-    else:
-      return features.tf_example_to_features(
-          tf_example=raw_features, config=self.config, random_seed=random_seed
       )
 
   def eval_shape(self, feat: features.FeatureDict) -> jax.ShapeDtypeStruct:
