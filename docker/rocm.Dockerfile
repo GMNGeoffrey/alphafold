@@ -4,7 +4,9 @@
 # its own image and mount your own alphafold source directory instead of copying
 # it in, e.g.
 # docker build --target deps -t alphafold-deps - <docker/rocm.Dockerfile
-FROM docker.io/rocm/jax:rocm7.1-jax0.7.1-py3.12 AS deps
+
+ARG BASE_IMAGE=docker.io/rocm/jax:rocm7.1-jax0.7.1-py3.12
+FROM ${BASE_IMAGE} AS deps
 
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 ENV JAX_PLATFORMS="gpu,cpu"
@@ -44,13 +46,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
   'absl-py==1.0.0' \
   'biopython==1.85' \
   'dm-haiku==0.0.15' \
-  'dm-tree==0.1.8' \
   'matplotlib==3.8.0' \
   'ml-collections==0.1.0' \
   'numpy==1.26.4' \
-  'pandas==2.2.3' \
   'pytest<8.5.0' \
-  'scipy==1.14.1' \
   'setuptools<72.0.0' \
   'tensorflow-cpu==2.20.0' \
   # Someone republished this on PyPI, so we don't have to go through conda, hence the odd name
