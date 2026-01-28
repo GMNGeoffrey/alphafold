@@ -5,27 +5,37 @@
 # it in, e.g.
 # docker build --target deps -t alphafold-deps - <docker/rocm.Dockerfile
 
-ARG BASE_IMAGE=docker.io/rocm/jax:rocm7.1-jax0.7.1-py3.12
+ARG BASE_IMAGE=docker.io/rocm/jax:rocm7.2-jax0.8.0-py3.12
 FROM ${BASE_IMAGE} AS deps
 
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 ENV JAX_PLATFORMS="gpu,cpu"
 
+# The paths in these base images are frequently broken, pointing to
+# /opt/rocm/jax-7.2 instead of /opt/rocm/jax-7.2.0, for instance. So we set them
+# ourselves. /opt/rocm should generally point to the correct thing regardless of
+# version. See https://github.com/ROCm/rocm-jax/issues/124
+ENV LLVM_PATH="/opt/rocm/llvm"
+ENV HIP_PATH="/opt/rocm"
+ENV ROCM_PATH="/opt/rocm"
+ENV LD_LIBRARY_PATH="/opt/rocm/lib"
+ENV PATH="/opt/rocm/opencl/bin:/opt/rocm/hcc/bin:/opt/rocm/llvm/bin:/opt/rocm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
   apt-get update --quiet \
   && apt-get install --no-install-recommends --yes --quiet \
-  build-essential \
-  cmake \
-  git \
-  hmmer \
-  kalign \
-  tzdata \
-  # Workaround for https://github.com/ROCm/rocm-jax/issues/163
-  libdw1t64 \
-  wget \
-  # Not an alphafold dependency, but we use it for runs on a single node with gnu-parallel
-  parallel
+    build-essential \
+    cmake \
+    git \
+    hmmer \
+    kalign \
+    tzdata \
+    # Workaround for https://github.com/ROCm/rocm-jax/issues/163
+    libdw1t64 \
+    wget \
+    # Not an alphafold dependency, but we use it for runs on a single node with gnu-parallel
+    parallel
 
 RUN git clone --branch v3.3.0 --single-branch https://github.com/soedinglab/hh-suite.git /tmp/hh-suite \
   && pushd /tmp/hh-suite \
@@ -43,21 +53,20 @@ RUN git clone --branch v3.3.0 --single-branch https://github.com/soedinglab/hh-s
 # compatibility with the base image JAX and Python versions.
 RUN --mount=type=cache,target=/root/.cache/pip \
   pip install \
-  'absl-py==1.0.0' \
-  'biopython==1.85' \
-  'dm-haiku==0.0.15' \
-  'matplotlib==3.8.0' \
-  'ml-collections==0.1.0' \
-  'numpy==1.26.4' \
-  'pytest<8.5.0' \
-  'setuptools<72.0.0' \
-  'tensorflow-cpu==2.20.0' \
-  # Someone republished this on PyPI, so we don't have to go through conda, hence the odd name
-  'pdbfixer-wheel==1.11.0' \
-  'openmm==8.3.1' \
-  # This isn't actually an alphafold dependency, but we use it for eval and it's
-  # small, so I'm throwing it in here for now.
-  'DockQ'
+    'absl-py==1.0.0' \
+    'biopython==1.85' \
+    'dm-haiku==0.0.15' \
+    'ml-collections==0.1.0' \
+    'numpy' \
+    'pytest<8.5.0' \
+    'setuptools<72.0.0' \
+    'tensorflow-cpu==2.20.0' \
+    # Someone republished this on PyPI, so we don't have to go through conda, hence the odd name
+    'pdbfixer-wheel==1.11.0' \
+    'openmm==8.3.1' \
+    # This isn't actually an alphafold dependency, but we use it for eval and it's
+    # small, so I'm throwing it in here for now.
+    'DockQ'
 
 # Add SETUID bit to the ldconfig binary so that non-root users can run it.
 RUN chmod u+s /sbin/ldconfig.real
