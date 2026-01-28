@@ -4,7 +4,7 @@
 # best approach for an actual production use case, where you'd either want to
 # use kubernetes or probably a python-based system with more shared resources
 # between jobs, but for benchmarking we prioritize a consistent environment
-# where the efficiencies of sharing are not desirable because they introduce
+# where some efficiencies of sharing are not desirable because they introduce
 # variability (e.g. we use taskset within each job).
 
 set -euo pipefail
@@ -36,11 +36,10 @@ if (( TOTAL_CORES % TOTAL_GPUS != 0 )); then
 fi
 
 CORES_PER_JOB="$(( TOTAL_CORES / TOTAL_GPUS ))"
-RUN_NAME="${RUN_NAME:-$(TZ=UTC date +%F-%H-%M-%S)}"
 
 INPUT_DIR="${INPUT_DIR:-/data/alphafold-inputs/features}"
 DATA_DIR="${DATA_DIR:-/data/alphafold}"
-OUTPUT_DIR="${OUTPUT_DIR:-output/local/${RUN_NAME}}"
+OUTPUT_DIR="${OUTPUT_DIR:-output/local/$(TZ=UTC date +%F-%H-%M-%S)}"
 
 if [[ -d "${OUTPUT_DIR}" ]]; then
     echo "Output directory ${OUTPUT_DIR} already exists." >&2
@@ -50,116 +49,44 @@ fi
 echo "Making output directory ${OUTPUT_DIR}"
 mkdir -p "${OUTPUT_DIR}"
 
-declare -a COMPLEXES=(
-    "7fci"
-    "7mnl"
-    "7n0a"
-    "7ox1"
-    "7ox2"
-    "7ox3"
-    "7ox4"
-    "7q6c"
-    "7r58"
-    "7ru6"
-    "7sbd"
-    "7sbg"
-    "7sjo"
-    "7sk3"
-    "7sk4"
-    "7sk5"
-    "7sk6"
-    "7sk7"
-    "7sk8"
-    "7sk9"
-    "7so7"
-    "7st8"
-    "7t6x"
-    "7t82"
-    "7t9m"
-    "7t9n"
-    "7tuf"
-    "7tug"
-    "7u8c"
-    "7u8g"
-    "7uih"
-    "7um3"
-    "7ura"
-    "7urc"
-    "7urd"
-    "7ure"
-    "7uvf"
-    "7vad"
-    "7vae"
-    "7vaf"
-    "7vag"
-    "7vgr"
-    "7vgs"
-    "7vn9"
-    "7vng"
-    "7w71"
-    "7wsi"
-    "7xq8"
-    "7xy8"
-    "7zlg"
-    "7zlh"
-    "7zli"
-    "7zlj"
-    "7zwi"
-    "7zxf"
-    "7zxg"
-    "7zxk"
-    "7zyi"
-    "8cz5"
-    "8dcy"
-    "8ddk"
-    "8djk"
-    "8djm"
-    "8dke"
-    "8dki"
-    "8dkm"
-    "8dkw"
-    "8dkx"
-    "8hii"
-    "8hij"
-    "8hik"
+# We sort complexes largest first to try to get a more even distribution of work
+# (LPT greedy scheduling, effectively)
+readarray -t COMPLEXES < <(
+    find "${INPUT_DIR}" -maxdepth 1 -name '*.npz' -type f -printf '%s %f\n' \
+        | sort -rn \
+        | cut -d ' ' -f 2 \
+        | xargs basename --multiple --suffix=.npz \
 )
 
-declare -a SEEDS=($(seq 1 5))
+
 declare -a MODEL_INDICES=($(seq 1 5))
+STARTING_SEED=1
+SEED_COUNT=5
 
 # For testing
-COMPLEXES=("7u8c" "7fci")
-SEEDS=(1)
+# COMPLEXES=("7fci" "7u8c")
+# SEED_COUNT=1
 # MODEL_INDICES=(1)
 
-total_jobs="$(( ${#COMPLEXES[@]} * ${#SEEDS[@]} * ${#MODEL_INDICES[@]} ))"
+JOB_COUNT="$(( ${#COMPLEXES[@]} * ${#MODEL_INDICES[@]} ))"
 
-echo "Launching ${total_jobs} jobs on 1 node:"
-echo "- ${#COMPLEXES[@]} complexes x ${#SEEDS[@]} seeds x ${#MODEL_INDICES[@]} model indices"
+TOTAL_PREDICTIONS="$(( ${#COMPLEXES[@]} * SEED_COUNT * ${#MODEL_INDICES[@]} ))"
+echo "Launching ${TOTAL_PREDICTIONS} predictions as ${JOB_COUNT} jobs on 1 node:"
+echo "- ${#COMPLEXES[@]} complexes x ${SEED_COUNT} seeds x ${#MODEL_INDICES[@]} model indices"
 echo "- ${TOTAL_GPUS} GPUs, ${TOTAL_CORES} cores (${CORES_PER_JOB} cores/job)"
 
-JOBS_FILE="${OUTPUT_DIR}/jobs.txt"
+# We put all the env vars in the explicit job invocation so we get the full
+# command in the joblog file for reproducibility.
 
-for seed in "${SEEDS[@]}"; do
-    for model_index in "${MODEL_INDICES[@]}"; do
-        for complex_name in "${COMPLEXES[@]}"; do
-            printf "%s %s %s\n" "${complex_name}" "${seed}" "${model_index}" >> "${JOBS_FILE}"
-        done
-    done
-done
-
-# We put all the env vars in the explicit job invocation for reproducibility and
-# so the full command is in the joblog file.
-
-# We want to print something if there are errors
+# We want to print something if there are errors, so disable errexit
 set +e
-time parallel \
+parallel \
     --jobs "${TOTAL_GPUS}" \
     --colsep ' ' \
     --joblog "${OUTPUT_DIR}/joblog.txt" \
     --bar \
-    "COMPLEX_NAME={1} SEED={2} MODEL_INDEX={3} SLOT={%} INPUT_DIR=${INPUT_DIR} DATA_DIR=${DATA_DIR} OUTPUT_DIR=${OUTPUT_DIR} CORES_PER_JOB=${CORES_PER_JOB} benchmarking/run_benchmark_job.sh &> /dev/null" \
-    :::: "${JOBS_FILE}"
+    "SLOT={%} COMPLEX_NAME={1} MODEL_INDEX={2} STARTING_SEED=${STARTING_SEED} SEED_COUNT=${SEED_COUNT} INPUT_DIR=${INPUT_DIR} DATA_DIR=${DATA_DIR} OUTPUT_DIR=${OUTPUT_DIR} CORES_PER_JOB=${CORES_PER_JOB} benchmarking/run_benchmark_job.sh &> /dev/null" \
+    ::: "${COMPLEXES[@]}" ::: "${MODEL_INDICES[@]}"
 
 ret=$?
 if (( ret != 0 )); then
