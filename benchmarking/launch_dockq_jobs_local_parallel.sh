@@ -39,7 +39,7 @@ time parallel \
     --jobs "${concurrent_jobs}" \
     --joblog "${JOBLOG_FILE}" \
     --bar \
-    "scripts/dockq.sh ${RESULT_DIR} ${REFERENCE_DIR} {} &> /dev/null" \
+    "benchmarking/dockq.sh ${RESULT_DIR} ${REFERENCE_DIR} {} &> /dev/null" \
     ::: "${complexes[@]}"
 
 ret=$?
