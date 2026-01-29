@@ -209,6 +209,12 @@ flags.DEFINE_bool(
     'This can reduce memory usage but may increase runtime.',
 )
 flags.DEFINE_boolean(
+    'save_full_results',
+    True,
+    'Whether to save the full pickled prediction results. These have'
+    ' interesting data, but they are quite large.',
+)
+flags.DEFINE_boolean(
     'use_precomputed_msas',
     False,
     'Whether to read MSAs that '
@@ -299,6 +305,7 @@ def search_and_predict(
     models_to_relax: predict.ModelsToRelax,
     use_precomputed_features: bool,
     model_type: str,
+    save_full_results: bool,
 ):
   """Predicts structure using AlphaFold for the given sequence."""
   logging.info('Predicting %s', fasta_name)
@@ -368,6 +375,7 @@ def search_and_predict(
             clear_cache=clear_cache,
             models_to_relax=models_to_relax,
             model_type=model_type,
+            save_full_results=save_full_results,
         )
     )
 
@@ -589,6 +597,7 @@ def main(argv):
         models_to_relax=FLAGS.models_to_relax,
         use_precomputed_features=FLAGS.use_precomputed_features,
         model_type=model_type,
+        save_full_results=FLAGS.save_full_results,
     )
 
 

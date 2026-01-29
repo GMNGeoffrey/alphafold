@@ -117,6 +117,7 @@ def predict_structure(
     clear_cache: bool,
     models_to_relax: ModelsToRelax,
     model_type: str,
+    save_full_results: bool = True,
 ):
   """Predicts structure using AlphaFold for the given sequence."""
   logging.info('Predicting %s', fasta_name)
@@ -191,12 +192,13 @@ def predict_structure(
       _save_pae_json_file(pae, float(max_pae), output_dir, model_name)
 
     # Remove jax dependency from results.
-    np_prediction_result = _jnp_to_np(dict(prediction_result))
+    if save_full_results:
+      np_prediction_result = _jnp_to_np(dict(prediction_result))
 
-    # Save the model outputs.
-    result_output_path = os.path.join(output_dir, f'result_{model_name}.pkl')
-    with open(result_output_path, 'wb') as f:
-      pickle.dump(np_prediction_result, f, protocol=4)
+      # Save the model outputs.
+      result_output_path = os.path.join(output_dir, f'result_{model_name}.pkl')
+      with open(result_output_path, 'wb') as f:
+        pickle.dump(np_prediction_result, f, protocol=4)
 
     # Add the predicted LDDT in the b-factor column.
     # Note that higher predicted LDDT value means higher model confidence.

@@ -145,6 +145,12 @@ flags.DEFINE_boolean(
     'recommended to enable if possible. GPUs must be available'
     ' if this setting is enabled.',
 )
+flags.DEFINE_boolean(
+    'save_full_results',
+    True,
+    'Whether to save the full pickled prediction results. These have'
+    ' interesting data, but they are quite large.',
+)
 
 FLAGS = flags.FLAGS
 
@@ -200,6 +206,7 @@ def predict_structures(
       clear_cache=clear_cache,
       models_to_relax=models_to_relax,
       model_type=model_type,
+      save_full_results=FLAGS.save_full_results,
   )
 
   logging.info('Final timings for %s: %s', system_name, timings)
