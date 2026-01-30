@@ -1,11 +1,13 @@
 import argparse
 import json
 import pathlib
+import re
 
 from Bio import SeqIO
 import pandas as pd
 from tqdm import tqdm
 
+MODEL_PRED_REGEX = re.compile(r"^(\w+)_pred_\d+$")
 
 def collect_residue_counts(fasta_dir: str | pathlib.Path) -> dict[str, int]:
   fasta_dir = pathlib.Path(fasta_dir)
@@ -29,8 +31,9 @@ def collect_run_data(base_path: str | pathlib.Path) -> pd.DataFrame:
   """
   Collect output from alphafold runs into a pandas DataFrame.
 
-  This is designed so that it can work regardless of the model hierarchy used
-  (e.g. separate subdirectories for different seeds or model checkpoints).
+  This is designed so that it can work regardless of the directory hierarchy
+  used (e.g. separate subdirectories for different seeds or model checkpoints)
+  as long as the first level divides it by complex name.
 
   Args:
       base_path: Path to the base output directory containing subdirectories
@@ -42,10 +45,9 @@ def collect_run_data(base_path: str | pathlib.Path) -> pd.DataFrame:
           - model_family
           - model_name
           - seed
-          - compile_time
-          - run_time
+          - runtime
+          - compilation_cached
           - recycle_count
-          - relaxed_dockq
           - unrelaxed_dockq
           - confidence
   """
@@ -70,25 +72,15 @@ def collect_run_data(base_path: str | pathlib.Path) -> pd.DataFrame:
       timings = read_json(timings_file)
       confidences = read_json(ranking_file)["iptm+ptm"]
 
+      models_already_run = set()
       for model_pred, seed in seeds.items():
         try:
-          model_name = model_pred.removesuffix("_pred_0")
-          compile_key = f"predict_and_compile_{model_pred}"
-          benchmark_key = f"predict_benchmark_{model_pred}"
-          recycles_key = f"num_recycles_{model_pred}"
+          model_name = MODEL_PRED_REGEX.match(model_pred).group(1)
 
-          predict_and_compile = timings[compile_key]
-          predict_benchmark = timings[benchmark_key]
-          compile_time = predict_and_compile - predict_benchmark
-
-          relaxed_dockq_file = seed_file.with_name(
-              f"relaxed_{model_pred}_dockq.json"
-          )
           unrelaxed_dockq_file = seed_file.with_name(
               f"unrelaxed_{model_pred}_dockq.json"
           )
 
-          relaxed_dockq = read_json(relaxed_dockq_file)["GlobalDockQ"]
           unrelaxed_dockq = read_json(unrelaxed_dockq_file)["GlobalDockQ"]
 
           record = {
@@ -96,14 +88,14 @@ def collect_run_data(base_path: str | pathlib.Path) -> pd.DataFrame:
               "model_family": "alphafold2",
               "model_name": model_name,
               "seed": seed,
-              "compile_time": compile_time,
-              "run_time": predict_benchmark,
-              "recycle_count": timings[recycles_key],
-              "relaxed_dockq": relaxed_dockq,
+              "runtime": timings[f"predict_and_compile_{model_pred}"],
+              "compilation_cached": model_name in models_already_run,
+              "recycle_count": timings[f"num_recycles_{model_pred}"],
               "unrelaxed_dockq": unrelaxed_dockq,
               "confidence": confidences[model_pred],
           }
           data_records.append(record)
+          models_already_run.add(model_name)
         except Exception as e:
           raise RuntimeError(
               f"Error processing {complex=}, {model_pred=}, {seed=}"
@@ -142,6 +134,7 @@ if __name__ == "__main__":
   )
   parser.add_argument(
       "--run_dir",
+      required=True,
       type=str,
       help=(
           "Path to the base output directory containing subdirectories for each"
@@ -150,6 +143,7 @@ if __name__ == "__main__":
   )
   parser.add_argument(
       "--fasta_dir",
+      required=True,
       type=str,
       help="Path to the directory containing FASTA files.",
   )
