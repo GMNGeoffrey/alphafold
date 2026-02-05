@@ -12,7 +12,7 @@ fi
 RESULT_DIR="$1"
 TOTAL_CORES="$(nproc --all)"
 
-REFERENCE_DIR="${INPUT_DIR:-/data/alphafold-inputs/reference_pdbs}"
+REFERENCE_DIR="${REFERENCE_DIR:-/data/alphafold-inputs/reference_pdbs}"
 complexes=($(find "${RESULT_DIR}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;))
 # For testing
 # complexes=("7u8c")
