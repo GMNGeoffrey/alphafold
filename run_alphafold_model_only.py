@@ -87,6 +87,11 @@ flags.DEFINE_boolean(
     'which should be more indicative of the time required for '
     'inferencing many proteins.',
 )
+flags.DEFINE_boolean(
+    'profile',
+    False,
+    'Collect a trace of model runtime after compilation. Implies --benchmark.'
+)
 flags.DEFINE_integer(
     'random_seed',
     None,
@@ -169,6 +174,7 @@ def predict_structures(
     model_runners: Dict[str, tuple[int, model.RunModel]],
     amber_relaxer: relax.AmberRelaxation,
     benchmark: bool,
+    profile: bool,
     clear_cache: bool,
     models_to_relax: predict.ModelsToRelax,
     model_type: str,
@@ -203,6 +209,7 @@ def predict_structures(
       model_runners=model_runners,
       amber_relaxer=amber_relaxer,
       benchmark=benchmark,
+      profile=profile,
       clear_cache=clear_cache,
       models_to_relax=models_to_relax,
       model_type=model_type,
@@ -340,7 +347,8 @@ def main(argv):
         output_dir_base=FLAGS.output_dir,
         model_runners=model_runners,
         amber_relaxer=amber_relaxer,
-        benchmark=FLAGS.benchmark,
+        benchmark=FLAGS.benchmark or FLAGS.profile,
+        profile=FLAGS.profile,
         clear_cache=FLAGS.clear_cache,
         models_to_relax=FLAGS.models_to_relax,
         model_type=model_type,

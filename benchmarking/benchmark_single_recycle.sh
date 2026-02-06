@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+be#!/usr/bin/env bash
 
 # Repro issues with jax disk caching
 
@@ -16,9 +16,12 @@ set -euo pipefail
 GPU=0
 SEED=1
 
+PROFILE="${PROFILE:-0}"
+
 MODEL_NAME="model_${MODEL_INDEX}_multimer_v3"
 RUN_OUTPUT_DIR="${OUTPUT_DIR}/${COMPLEX_NAME}/seed_${SEED}/model_${MODEL_INDEX}"
 
+echo "Creating output directory: ${RUN_OUTPUT_DIR}"
 mkdir -p "${RUN_OUTPUT_DIR}"
 
 if [[ -v JAX_COMPILATION_CACHE_DIR ]]; then
@@ -32,6 +35,7 @@ fi
   CUDA_VISIBLE_DEVICES="${GPU}" \
       python run_alphafold_model_only.py \
         --benchmark \
+        --profile="${PROFILE}" \
         --data_dir="${DATA_DIR}" \
         --feature_paths="${INPUT_DIR}/${COMPLEX_NAME}.npz" \
         --model_preset=multimer \

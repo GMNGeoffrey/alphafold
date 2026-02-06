@@ -14,6 +14,7 @@
 
 """Full AlphaFold protein structure prediction script."""
 
+from contextlib import nullcontext
 import enum
 import json
 import os
@@ -117,6 +118,7 @@ def predict_structure(
     clear_cache: bool,
     models_to_relax: ModelsToRelax,
     model_type: str,
+    profile: bool = False,
     save_full_results: bool = True,
 ):
   """Predicts structure using AlphaFold for the given sequence."""
@@ -165,11 +167,17 @@ def predict_structure(
     timings[f'num_recycles_{model_name}'] = num_recycles
 
     if benchmark:
-      t_0 = time.time()
-      model_runner.predict(
-          processed_feature_dict, random_seed=model_random_seed
-      )
-      t_diff = time.time() - t_0
+      ctx = nullcontext()
+      if profile:
+        profile_dir = os.path.join(output_dir, f'profile_{model_name}')
+        logging.info('Saving JAX profile to %s', profile_dir)
+        ctx = jax.profiler.trace(profile_dir, create_perfetto_trace=True)
+      with ctx:
+        t_0 = time.time()
+        model_runner.predict(
+            processed_feature_dict, random_seed=model_random_seed
+        )
+        t_diff = time.time() - t_0
       timings[f'predict_benchmark_{model_name}'] = t_diff
       logging.info(
           'Total JAX model %s on %s predict time (excludes compilation time):'
