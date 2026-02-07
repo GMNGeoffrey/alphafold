@@ -1,4 +1,4 @@
-be#!/usr/bin/env bash
+#!/usr/bin/env bash
 
 # Repro issues with jax disk caching
 
@@ -13,7 +13,6 @@ set -euo pipefail
 #   DATA_DIR: Directory containing Alphafold model parameter files under params/ subdir.
 #   OUTPUT_DIR: Root directory to write output results to.
 
-GPU=0
 SEED=1
 
 PROFILE="${PROFILE:-0}"
@@ -32,20 +31,19 @@ fi
 
 (
   set -x;
-  CUDA_VISIBLE_DEVICES="${GPU}" \
-      python run_alphafold_model_only.py \
-        --benchmark \
-        --profile="${PROFILE}" \
-        --data_dir="${DATA_DIR}" \
-        --feature_paths="${INPUT_DIR}/${COMPLEX_NAME}.npz" \
-        --model_preset=multimer \
-        --models_to_relax=none \
-        --model_names="${MODEL_NAME}" \
-        --num_multimer_predictions_per_model=1 \
-        --output_dir="${RUN_OUTPUT_DIR}" \
-        --random_seed="${SEED}" \
-        --consistent_random_seeds \
-        --use_gpu_relax \
-        --num_recycle=1 \
-        --recycle_early_stop_tolerance=-1 \
+  python run_alphafold_model_only.py \
+    --benchmark \
+    --profile="${PROFILE}" \
+    --data_dir="${DATA_DIR}" \
+    --feature_paths="${INPUT_DIR}/${COMPLEX_NAME}.npz" \
+    --model_preset=multimer \
+    --models_to_relax=none \
+    --model_names="${MODEL_NAME}" \
+    --num_multimer_predictions_per_model=1 \
+    --output_dir="${RUN_OUTPUT_DIR}" \
+    --random_seed="${SEED}" \
+    --consistent_random_seeds \
+    --use_gpu_relax=False \
+    --num_recycle=1 \
+    --recycle_early_stop_tolerance=-1 \
 ) 2>&1 | tee -a "${RUN_OUTPUT_DIR}/output.log"
