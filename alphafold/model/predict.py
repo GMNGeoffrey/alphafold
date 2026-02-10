@@ -169,7 +169,7 @@ def predict_structure(
     if benchmark:
       ctx = nullcontext()
       if profile:
-        profile_dir = os.path.join(output_dir, f'profile_{model_name}')
+        profile_dir = os.environ.get('JAX_PROFILE_DIR', os.path.join(output_dir, f'profile_{model_name}'))
         logging.info('Saving JAX profile to %s', profile_dir)
         ctx = jax.profiler.trace(profile_dir, create_perfetto_trace=True)
       with ctx:
