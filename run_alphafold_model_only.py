@@ -14,11 +14,9 @@
 
 """Full AlphaFold protein structure prediction script."""
 
-import enum
 import json
 import os
 import pathlib
-import pickle
 import random
 import sys
 from typing import Dict
