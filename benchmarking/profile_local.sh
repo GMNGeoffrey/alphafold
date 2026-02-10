@@ -14,8 +14,7 @@ set -euo pipefail
 #   OUTPUT_DIR: Root directory to write output results to.
 
 SEED=1
-
-PROFILE="${PROFILE:-0}"
+NUM_RECYCLES="${NUM_RECYCLES:-1}"
 
 MODEL_NAME="model_${MODEL_INDEX}_multimer_v3"
 RUN_OUTPUT_DIR="${OUTPUT_DIR}/${COMPLEX_NAME}/seed_${SEED}/model_${MODEL_INDEX}"
@@ -33,7 +32,7 @@ fi
   set -x;
   python run_alphafold_model_only.py \
     --benchmark \
-    --profile="${PROFILE}" \
+    --profile \
     --data_dir="${DATA_DIR}" \
     --feature_paths="${INPUT_DIR}/${COMPLEX_NAME}.npz" \
     --model_preset=multimer \
@@ -44,6 +43,6 @@ fi
     --random_seed="${SEED}" \
     --consistent_random_seeds \
     --use_gpu_relax=False \
-    --num_recycle=1 \
+    --num_recycle="${NUM_RECYCLES}" \
     --recycle_early_stop_tolerance=-1 \
 ) 2>&1 | tee -a "${RUN_OUTPUT_DIR}/output.log"
