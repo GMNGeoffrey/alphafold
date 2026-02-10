@@ -85,7 +85,7 @@ parallel \
     --colsep ' ' \
     --joblog "${OUTPUT_DIR}/joblog.txt" \
     --bar \
-    "SLOT={%} COMPLEX_NAME={1} MODEL_INDEX={2} FIXED_RECYCLES=${FIXED_RECYCLES} STARTING_SEED=${STARTING_SEED} SEED_COUNT=${SEED_COUNT} INPUT_DIR=${INPUT_DIR} DATA_DIR=${DATA_DIR} OUTPUT_DIR=${OUTPUT_DIR} CORES_PER_JOB=${CORES_PER_JOB} benchmarking/run_benchmark_job.sh &> /dev/null" \
+    "SLOT={%} COMPLEX_NAME={1} MODEL_INDEX={2} FIXED_RECYCLES=${FIXED_RECYCLES} XLA_FLAGS=${XLA_FLAGS:-} STARTING_SEED=${STARTING_SEED} SEED_COUNT=${SEED_COUNT} INPUT_DIR=${INPUT_DIR} DATA_DIR=${DATA_DIR} OUTPUT_DIR=${OUTPUT_DIR} CORES_PER_JOB=${CORES_PER_JOB} benchmarking/run_benchmark_job.sh &> /dev/null" \
     ::: "${COMPLEXES[@]}" ::: "${MODEL_INDICES[@]}"
 
 ret=$?
