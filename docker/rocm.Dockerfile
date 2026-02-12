@@ -33,9 +33,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     tzdata \
     # Workaround for https://github.com/ROCm/rocm-jax/issues/163
     libdw1t64 \
-    wget \
-    # Not an alphafold dependency, but we use it for runs on a single node with gnu-parallel
-    parallel
+    wget
 
 RUN git clone --branch v3.3.0 --single-branch https://github.com/soedinglab/hh-suite.git /tmp/hh-suite \
   && pushd /tmp/hh-suite \
@@ -57,16 +55,13 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     'biopython==1.85' \
     'dm-haiku==0.0.15' \
     'ml-collections==0.1.0' \
-    'numpy' \
+    'numpy==2.4.1' \
     'pytest<8.5.0' \
     'setuptools<72.0.0' \
     'tensorflow-cpu==2.20.0' \
     # Someone republished this on PyPI, so we don't have to go through conda, hence the odd name
     'pdbfixer-wheel==1.11.0' \
-    'openmm==8.3.1' \
-    # This isn't actually an alphafold dependency, but we use it for eval and it's
-    # small, so I'm throwing it in here for now.
-    'DockQ'
+    'openmm==8.3.1'
 
 # Add SETUID bit to the ldconfig binary so that non-root users can run it.
 RUN chmod u+s /sbin/ldconfig.real
