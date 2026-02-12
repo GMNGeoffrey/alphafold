@@ -21,6 +21,12 @@ import random
 import sys
 from typing import Dict
 
+import jax
+
+for d in jax.devices():
+  print(f"Found device: {d}", file=sys.stderr)
+print(flush=True)
+
 from absl import app
 from absl import flags
 from absl import logging
